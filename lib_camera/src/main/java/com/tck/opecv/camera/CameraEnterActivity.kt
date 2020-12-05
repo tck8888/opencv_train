@@ -3,10 +3,14 @@ package com.tck.opecv.camera
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import com.tck.opecv.base.MyLog
 import com.tck.opecv.camera.databinding.ActivityCameraEnterBinding
+import org.opencv.android.OpenCVLoader
+import java.io.File
 
 /**
  *
@@ -49,6 +53,21 @@ class CameraEnterActivity : AppCompatActivity() {
             } else {
                 ActivityCompat.requestPermissions(this, permissions, 100)
             }
+        }
+
+        deleteCacheImageFile()
+
+        if (OpenCVLoader.initDebug()) {
+            MyLog.d("OpenCVLoader.initDebug() init success")
+        } else {
+            MyLog.d("OpenCVLoader.initDebug() init error")
+        }
+    }
+
+    private fun deleteCacheImageFile() {
+        val file = File("${this.cacheDir}")
+        file.listFiles()?.forEach {
+            it.delete()
         }
     }
 

@@ -1,18 +1,20 @@
 package com.tck.opecv.camera
 
-import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.os.Bundle
 import android.util.Log
+import android.util.Size
+import android.view.Surface
 import androidx.appcompat.app.AppCompatActivity
+import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
-import androidx.camera.view.CameraView
-import androidx.core.app.ActivityCompat
+import androidx.camera.core.Preview
+import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
+import com.tck.opecv.base.MyLog
 import com.tck.opecv.camera.databinding.ActivityCameraBinding
-import com.tck.opecv.camera.databinding.ActivityCameraEnterBinding
 import java.io.File
 
 
@@ -34,27 +36,59 @@ class CameraActivity : AppCompatActivity() {
     }
 
     private lateinit var binding: ActivityCameraBinding
+    private var preview: Preview? = null
+    private var imageCapture: ImageCapture? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityCameraBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        openCamera()
 
         binding.btnStartTakePhoto.setOnClickListener {
             takePicture()
         }
+
+        binding.previewView.post {
+            initCamera()
+        }
+    }
+
+    @SuppressLint("RestrictedApi")
+    private fun initCamera() {
+        val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
+        cameraProviderFuture.addListener({
+            val cameraProvider = cameraProviderFuture.get()
+            val cameraSelector = CameraSelector.Builder().build()
+            val tempPreview = Preview.Builder()
+                .build()
+            val tempImageCapture = ImageCapture
+                .Builder()
+                .setDefaultResolution(Size(1280, 720))
+                .build()
+            preview = tempPreview
+            imageCapture = tempImageCapture
+            try {
+                cameraProvider.unbindAll()
+                cameraProvider.bindToLifecycle(this, cameraSelector, tempPreview, tempImageCapture)
+                tempPreview.setSurfaceProvider(binding.previewView.surfaceProvider)
+            } catch (e: Exception) {
+                MyLog.d("initCamera error:${e.message}")
+            }
+
+        }, ContextCompat.getMainExecutor(this))
+
+
     }
 
     private fun takePicture() {
+        val tempImageCapture= imageCapture ?: return
         val filePath = "${cacheDir}${File.separator}open_cv_test_${System.currentTimeMillis()}.png"
         val outputFileOptions = ImageCapture
             .OutputFileOptions
             .Builder(File(filePath))
             .build()
-        binding.cameraView.captureMode = CameraView.CaptureMode.IMAGE
-        binding.cameraView.takePicture(
+        tempImageCapture.takePicture(
             outputFileOptions,
             ContextCompat.getMainExecutor(this),
             object : ImageCapture.OnImageSavedCallback {
@@ -73,16 +107,6 @@ class CameraActivity : AppCompatActivity() {
         )
     }
 
-    private fun openCamera() {
-        if (ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.CAMERA
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            return
-        }
-        binding.cameraView.bindToLifecycle(this)
-    }
 
 
 }
