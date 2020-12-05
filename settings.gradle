@@ -1,0 +1,3 @@
+include ':lib_opencv'
+include ':app'
+rootProject.name = "opencv_train"
