@@ -17,7 +17,13 @@
             <ImageView
                 android:id="@+id/iv_cover"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent" />
+                android:layout_height="wrap_content" />
+
+            <ImageView
+                android:id="@+id/iv_result"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp" />
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 

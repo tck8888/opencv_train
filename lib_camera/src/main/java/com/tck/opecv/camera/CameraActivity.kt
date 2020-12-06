@@ -12,6 +12,7 @@ import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.view.CameraView
 import androidx.core.content.ContextCompat
 import com.tck.opecv.base.MyLog
 import com.tck.opecv.camera.databinding.ActivityCameraBinding
@@ -59,13 +60,16 @@ class CameraActivity : AppCompatActivity() {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
         cameraProviderFuture.addListener({
             val cameraProvider = cameraProviderFuture.get()
-            val cameraSelector = CameraSelector.Builder().build()
+            val cameraSelector = CameraSelector.Builder()
+                    .requireLensFacing(CameraSelector.LENS_FACING_BACK)
+                    .build()
             val tempPreview = Preview.Builder()
-                .build()
+                    .build()
             val tempImageCapture = ImageCapture
-                .Builder()
-                .setDefaultResolution(Size(720, 1280))
-                .build()
+                    .Builder()
+                    .setDefaultResolution(Size(1280, 720))
+                    .build()
+            tempImageCapture.flashMode
             preview = tempPreview
             imageCapture = tempImageCapture
             try {
@@ -82,31 +86,30 @@ class CameraActivity : AppCompatActivity() {
     }
 
     private fun takePicture() {
-        val tempImageCapture= imageCapture ?: return
+        val tempImageCapture = imageCapture ?: return
         val filePath = "${cacheDir}${File.separator}open_cv_test_${System.currentTimeMillis()}.png"
         val outputFileOptions = ImageCapture
-            .OutputFileOptions
-            .Builder(File(filePath))
-            .build()
+                .OutputFileOptions
+                .Builder(File(filePath))
+                .build()
         tempImageCapture.takePicture(
-            outputFileOptions,
-            ContextCompat.getMainExecutor(this),
-            object : ImageCapture.OnImageSavedCallback {
-                override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
-                    Log.d(TAG, "takePicture success savedUri is :${filePath}")
-                    val intent = Intent(this@CameraActivity, ImageEditActivity::class.java)
-                    intent.putExtra("url", filePath)
-                    startActivity(intent)
+                outputFileOptions,
+                ContextCompat.getMainExecutor(this),
+                object : ImageCapture.OnImageSavedCallback {
+                    override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
+                        MyLog.d("takePicture success savedUri is :${filePath}")
+                        val intent = Intent(this@CameraActivity, ImageEditActivity::class.java)
+                        intent.putExtra("url", filePath)
+                        startActivity(intent)
 
-                }
+                    }
 
-                override fun onError(exception: ImageCaptureException) {
-                    Log.d(TAG, "takePicture error :$exception")
+                    override fun onError(exception: ImageCaptureException) {
+                        MyLog.d("takePicture error :$exception")
+                    }
                 }
-            }
         )
     }
-
 
 
 }

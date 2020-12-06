@@ -1,69 +1,86 @@
 package com.tck.opecv.camera
 
+import android.annotation.SuppressLint
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import androidx.appcompat.app.AppCompatActivity
+import android.graphics.Matrix
 import android.os.Bundle
-import android.util.Log
-import androidx.camera.core.ImageProxy
+import androidx.appcompat.app.AppCompatActivity
+import androidx.camera.core.impl.utils.Exif
+import com.bumptech.glide.Glide
+import com.tck.opecv.base.MyLog
 import com.tck.opecv.camera.databinding.ActivityImageEditBinding
 import org.opencv.android.Utils
 import org.opencv.core.Core
 import org.opencv.core.Mat
-import org.opencv.core.Point
 import org.opencv.core.Size
 import org.opencv.imgproc.Imgproc
-import org.opencv.imgproc.Imgproc.getStructuringElement
 
 class ImageEditActivity : AppCompatActivity() {
 
-    companion object {
-        val TAG = "opencv"
-    }
 
     //source bitmap width:4032,height:3024
     private lateinit var binding: ActivityImageEditBinding
 
     private var url = ""
 
+    @SuppressLint("RestrictedApi")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityImageEditBinding.inflate(layoutInflater)
         setContentView(binding.root)
         url = intent.getStringExtra("url") ?: ""
-
+        MyLog.d("url:$url")
         val decodeFile = BitmapFactory.decodeFile(url)
+        MyLog.d("bitmap current rotation:${Exif.createFromFileString(url).rotation}")
         decodeFile?.let {
-            Log.d(TAG, "source bitmap width:${it.width},height:${it.height}")
+            MyLog.d("source bitmap width:${it.width},height:${it.height}")
         }
-        binding.ivCover.setImageBitmap(decodeFile)
+        Glide.with(this).load(url).into(binding.ivCover)
         binding.btnRecognitionTextRegion.setOnClickListener {
             test()
         }
     }
 
     fun test() {
-        val srcMat = Mat()
-        val dstMat = Mat()
-        val srcBitmap = BitmapFactory.decodeFile(url)
-        Utils.bitmapToMat(srcBitmap, srcMat)
-        Imgproc.cvtColor(srcMat, dstMat, Imgproc.COLOR_BGR2GRAY)
-        Imgproc.adaptiveThreshold(
-            dstMat,
-            dstMat,
-            255.toDouble(),
-            Imgproc.ADAPTIVE_THRESH_MEAN_C,
-            Imgproc.THRESH_BINARY, 15, (-2).toDouble()
-        )
-        val d1 = (-1).toDouble()
-        val d3 = 3.toDouble()
+        Thread {
+            val srcMat = Mat()
 
-        val temp = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, Size(d3, d3), Point(d1, d1))
-        Imgproc.morphologyEx(dstMat, dstMat, Imgproc.MORPH_OPEN, temp, Point(d1, d1), 1, 0)
-        Imgproc.cvtColor(dstMat, dstMat, Imgproc.COLOR_GRAY2BGR)
+            val grayMat = Mat()
+            val blurMat = Mat()
+            val usm = Mat()
+            val thresholdMat = Mat()
+            val srcBitmap =  rotateBitmap(BitmapFactory.decodeFile(url),90f)
+            Utils.bitmapToMat(srcBitmap, srcMat)
+            Imgproc.GaussianBlur(srcMat, blurMat, Size(0.0, 0.0), 25.0)
+            Core.addWeighted(srcMat, 1.5, blurMat, -0.5, 0.0, usm)
+            Imgproc.cvtColor(usm, grayMat, Imgproc.COLOR_BGR2GRAY)
+            Imgproc.threshold(grayMat, thresholdMat, 0.0, 255.0, Imgproc.THRESH_OTSU)
+            Utils.matToBitmap(thresholdMat, srcBitmap)
+            runOnUiThread {
+                binding.ivResult.setImageBitmap(srcBitmap)
+            }
+            srcMat.release()
+            grayMat.release()
+            blurMat.release()
+            usm.release()
+            thresholdMat.release()
 
-        Utils.matToBitmap(dstMat, srcBitmap)
-        binding.ivCover.setImageBitmap(srcBitmap)
-        srcMat.release()
-        dstMat.release()
+        }.start()
+
+    }
+
+
+    private fun rotateBitmap(origin: Bitmap?, degrees: Float): Bitmap? {
+        val tempBitmap = origin ?: return null
+        val matrix = Matrix()
+        matrix.setRotate(degrees)
+        val newBitmap =
+            Bitmap.createBitmap(tempBitmap, 0, 0, tempBitmap.width, tempBitmap.height, matrix, false)
+        if (newBitmap == tempBitmap) {
+            return newBitmap
+        }
+        tempBitmap.recycle()
+        return newBitmap
     }
 }

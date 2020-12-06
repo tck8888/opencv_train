@@ -52,4 +52,6 @@ dependencies {
     implementation project(path: ':lib_opencv')
 
     api project(path: ':lib_base')
+
+    annotationProcessor 'com.github.bumptech.glide:compiler:4.11.0'
 }
