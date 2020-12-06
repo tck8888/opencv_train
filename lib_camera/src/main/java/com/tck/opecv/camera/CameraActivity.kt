@@ -64,7 +64,7 @@ class CameraActivity : AppCompatActivity() {
                 .build()
             val tempImageCapture = ImageCapture
                 .Builder()
-                .setDefaultResolution(Size(1280, 720))
+                .setDefaultResolution(Size(720, 1280))
                 .build()
             preview = tempPreview
             imageCapture = tempImageCapture
