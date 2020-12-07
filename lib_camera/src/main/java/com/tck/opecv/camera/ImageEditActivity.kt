@@ -44,43 +44,39 @@ class ImageEditActivity : AppCompatActivity() {
 
     fun test() {
         Thread {
-            val srcMat = Mat()
+            try {
+                val srcMat = Mat()
+                val grayMat = Mat()
+                val blurMat = Mat()
+                val usm = Mat()
+                val thresholdMat = Mat()
+                val srcBitmap = BitmapFactory.decodeFile(url)
+                Utils.bitmapToMat(srcBitmap, srcMat)
 
-            val grayMat = Mat()
-            val blurMat = Mat()
-            val usm = Mat()
-            val thresholdMat = Mat()
-            val srcBitmap =  rotateBitmap(BitmapFactory.decodeFile(url),90f)
-            Utils.bitmapToMat(srcBitmap, srcMat)
-            Imgproc.GaussianBlur(srcMat, blurMat, Size(0.0, 0.0), 25.0)
-            Core.addWeighted(srcMat, 1.5, blurMat, -0.5, 0.0, usm)
-            Imgproc.cvtColor(usm, grayMat, Imgproc.COLOR_BGR2GRAY)
-            Imgproc.threshold(grayMat, thresholdMat, 0.0, 255.0, Imgproc.THRESH_OTSU)
-            Utils.matToBitmap(thresholdMat, srcBitmap)
-            runOnUiThread {
-                binding.ivResult.setImageBitmap(srcBitmap)
+                Imgproc.GaussianBlur(srcMat, blurMat, Size(0.0, 0.0), 25.0)
+                Core.addWeighted(srcMat, 1.5, blurMat, -0.5, 0.0, usm)
+
+                Imgproc.cvtColor(usm, grayMat, Imgproc.COLOR_BGR2GRAY)
+
+                Imgproc.threshold(grayMat, thresholdMat, 0.0, 255.0, Imgproc.THRESH_OTSU)
+                Utils.matToBitmap(thresholdMat,srcBitmap)
+
+                runOnUiThread {
+                    binding.ivResult.setImageBitmap(srcBitmap)
+                }
+                srcMat.release()
+                grayMat.release()
+                blurMat.release()
+                usm.release()
+                thresholdMat.release()
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
-            srcMat.release()
-            grayMat.release()
-            blurMat.release()
-            usm.release()
-            thresholdMat.release()
 
         }.start()
 
     }
 
 
-    private fun rotateBitmap(origin: Bitmap?, degrees: Float): Bitmap? {
-        val tempBitmap = origin ?: return null
-        val matrix = Matrix()
-        matrix.setRotate(degrees)
-        val newBitmap =
-            Bitmap.createBitmap(tempBitmap, 0, 0, tempBitmap.width, tempBitmap.height, matrix, false)
-        if (newBitmap == tempBitmap) {
-            return newBitmap
-        }
-        tempBitmap.recycle()
-        return newBitmap
-    }
+
 }
