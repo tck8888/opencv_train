@@ -4,15 +4,13 @@ import android.annotation.SuppressLint
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.ImageFormat
 import android.graphics.Matrix
 import android.media.ExifInterface
 import android.os.Bundle
 import android.util.Size
 import androidx.appcompat.app.AppCompatActivity
-import androidx.camera.core.CameraSelector
-import androidx.camera.core.ImageCapture
-import androidx.camera.core.ImageCaptureException
-import androidx.camera.core.Preview
+import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import com.tck.opecv.base.MyLog
@@ -66,14 +64,22 @@ class CameraActivity : AppCompatActivity() {
                 .build()
             val tempImageCapture = ImageCapture
                 .Builder()
-                .setDefaultResolution(Size(1280, 720))
+                .setTargetResolution(Size(640, 480))
                 .build()
+            val imageAnalysis = ImageAnalysis.Builder().build()
+            imageAnalysis.setAnalyzer(ContextCompat.getMainExecutor(this), myAnalyzer);
             tempImageCapture.flashMode
             preview = tempPreview
             imageCapture = tempImageCapture
             try {
                 cameraProvider.unbindAll()
-                cameraProvider.bindToLifecycle(this, cameraSelector, tempPreview, tempImageCapture)
+                cameraProvider.bindToLifecycle(
+                    this,
+                    cameraSelector,
+                    tempPreview,
+                    tempImageCapture,
+                    imageAnalysis
+                )
                 tempPreview.setSurfaceProvider(binding.previewView.surfaceProvider)
             } catch (e: Exception) {
                 MyLog.d("initCamera error:${e.message}")
@@ -81,7 +87,34 @@ class CameraActivity : AppCompatActivity() {
 
         }, ContextCompat.getMainExecutor(this))
 
+    }
 
+    private var myAnalyzer = ImageAnalysis.Analyzer { image ->
+
+        if (image.format != ImageFormat.YUV_420_888) {
+            image.close()
+            return@Analyzer
+        }
+
+        val width = image.width
+        val height = image.height
+        val planes = image.planes
+
+        val vBuffer = planes[2].buffer
+
+        //y数据
+        val yPixelStride = planes[0].pixelStride
+        val yBuffer = planes[0].buffer
+
+        //U数据
+        val uBuffer = planes[1].buffer
+        val uPixelStride = planes[1].pixelStride
+
+        if (uPixelStride==1){
+
+        }else if (uPixelStride==2){
+
+        }
     }
 
     private fun takePicture() {
